@@ -1,0 +1,25 @@
+.notification {
+    border: none;
+    font-weight: 800;
+    text-align: center;
+
+    &.success {
+        background: rgb(0, 54, 40);
+        color: rgb(6, 214, 160);
+    }
+
+    &.info {
+        background: rgb(0, 40, 54);
+        color: rgb(6, 160, 214);
+    }
+
+    &.warning {
+        background: rgb(54, 40, 0);
+        color: rgb(214, 160, 6);
+    }
+
+    &.error {
+        background: rgb(54, 0, 10);
+        color: rgb(214, 6, 40);
+    }
+}
