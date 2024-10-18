@@ -41,7 +41,7 @@ function ConnectedMenu({
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
-            if (!componentRef.current?.contains(event.target)) {
+            if (!componentRef.current?.contains(event.target as Node)) {
                 hideMenu();
             }
         };
