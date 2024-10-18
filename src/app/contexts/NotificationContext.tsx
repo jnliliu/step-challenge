@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import {
     createContext,
     type ReactNode,
@@ -6,11 +6,11 @@ import {
     useContext,
     useRef,
     useState,
-} from 'react';
+} from "react";
 
-import './notifications.css';
+import "./notifications.css";
 
-export type INotificationType = 'success' | 'info' | 'warning' | 'error';
+export type INotificationType = "success" | "info" | "warning" | "error";
 
 export interface INotification {
     id: number;
@@ -36,7 +36,7 @@ export function useNotifications() {
 
     if (!notifications)
         throw new Error(
-            'Make sure you call this within a NotificationProvider.'
+            "Make sure you call this within a NotificationProvider."
         );
 
     return notifications;
@@ -55,7 +55,7 @@ export default function NotificationProvider({
     const showNotification = useCallback(
         (
             text: string,
-            type: INotificationType = 'info',
+            type: INotificationType = "info",
             hideAfterMs?: number
         ) => {
             idTracker.current++;
@@ -94,7 +94,7 @@ export default function NotificationProvider({
     const notificationItems = notifications.map((n) => (
         <div
             key={n.id}
-            className={`notification ${n.type} px-6 py-4 border-0 rounded mb-4 w-96`}
+            className={`notification ${n.type} px-6 py-4 border-0 rounded mb-4 min-w-96`}
         >
             <span className="inline-block align-middle mr-8 font-semibold">
                 {n.text}
