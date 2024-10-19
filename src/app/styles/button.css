@@ -1,54 +1,58 @@
-.btn {
-    background-image: none;
-    background: #0000;
-    border: 1px solid #434343;
-    border-radius: 2px;
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.015);
-    color: #ffffffd9;
-    cursor: pointer;
-    display: inline-block;
-    font-size: 14px;
-    font-weight: 400;
-    height: 32px;
-    line-height: 1.5715;
-    padding: 4px 15px;
-    position: relative;
-    text-align: center;
-    touch-action: manipulation;
-    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-    user-select: none;
-    white-space: nowrap;
+@tailwind components;
 
-    &.btn-default {
-        border: none;
+@layer components {
+    .btn {
+        background-image: none;
+        background: #0000;
+        border: 1px solid #434343;
+        border-radius: 2px;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.015);
+        color: #ffffffd9;
+        cursor: pointer;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: 400;
+        height: 32px;
+        line-height: 1.5715;
+        padding: 4px 15px;
+        position: relative;
         text-align: center;
-    }
+        touch-action: manipulation;
+        transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+        user-select: none;
+        white-space: nowrap;
 
-    &.btn-connect {
-        background: rgb(0, 54, 40);
-        color: rgb(6, 214, 160);
-        border: none;
-        text-align: center;
-        font-weight: 800;
-
-        &:hover {
-            color: rgb(0, 0, 0);
-            background: rgb(6, 214, 160);
+        &.btn-default {
+            border: none;
+            text-align: center;
         }
-    }
 
-    &.btn-connected {
-        background: rgb(20, 20, 20);
-        color: rgb(6, 214, 160);
-        text-align: center;
+        &.btn-connect {
+            background: rgb(0, 54, 40);
+            color: rgb(6, 214, 160);
+            border: none;
+            text-align: center;
+            font-weight: 800;
 
-        &:hover {
-            border: 2px solid rgb(0, 54, 40);
+            &:hover {
+                color: rgb(0, 0, 0);
+                background: rgb(6, 214, 160);
+            }
         }
-    }
 
-    &.btn-rounded {
-        border-radius: 8px;
-        width: 125px;
+        &.btn-connected {
+            background: rgb(20, 20, 20);
+            color: rgb(6, 214, 160);
+            text-align: center;
+
+            &:hover {
+                border: 2px solid rgb(0, 54, 40);
+            }
+        }
+
+        &.btn-rounded {
+            border-radius: 8px;
+            width: 125px;
+        }
     }
 }

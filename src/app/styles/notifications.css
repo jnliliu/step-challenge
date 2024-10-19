@@ -1,0 +1,27 @@
+@tailwind components;
+
+@layer components {
+    .notification {
+        border: none;
+        font-weight: 400;
+        text-align: start;
+        color: #ffffffd9;
+
+        &.success {
+            background: rgb(0, 54, 40);
+            color: rgb(6, 214, 160);
+        }
+
+        &.info {
+            background: rgb(20, 20, 20);
+        }
+
+        &.warning {
+            background: rgb(54, 40, 0);
+        }
+
+        &.error {
+            background: rgb(54, 0, 10);
+        }
+    }
+}

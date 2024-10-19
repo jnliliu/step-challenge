@@ -4,8 +4,8 @@ import localFont from "next/font/local";
 import Image from "next/image";
 import { AppWalletProvider } from "./components/appWalletProvider";
 import Header from "./components/header";
-import NotificationProvider from "./contexts/NotificationContext";
-import "./globals.css";
+import NotificationProvider from "./components/notificationContext";
+import "./styles/globals.css";
 
 const geistSans = localFont({
     src: "./fonts/GeistVF.woff",

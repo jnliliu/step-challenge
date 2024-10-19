@@ -9,7 +9,7 @@ import "@/app/styles/button.css";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNotifications } from "../contexts/NotificationContext";
+import { useNotifications } from "./notificationContext";
 
 interface IConnectedMenuProps {
     isVisible: boolean;

@@ -8,7 +8,7 @@ import {
     useState,
 } from "react";
 
-import "./notifications.css";
+import "@/app/styles/notifications.css";
 
 export type INotificationType = "success" | "info" | "warning" | "error";
 
@@ -119,7 +119,7 @@ export default function NotificationProvider({
             {children}
 
             {notifications.length ? (
-                <div className="fixed bottom-0 w-full p-4">
+                <div className="fixed bottom-0 w-full md:w-96 p-4">
                     {notificationItems}
                 </div>
             ) : null}
