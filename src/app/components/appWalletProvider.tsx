@@ -13,6 +13,7 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { type ReactNode, useMemo, useState } from "react";
+import CustomWalletProvider from "./customWalletContext";
 
 export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
@@ -32,7 +33,9 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     return (
         <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect>
-                <WalletModalProvider>{children}</WalletModalProvider>
+                <WalletModalProvider>
+                    <CustomWalletProvider>{children}</CustomWalletProvider>
+                </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
     );

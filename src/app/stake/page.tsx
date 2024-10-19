@@ -1,26 +1,52 @@
-// type StakeMode = "stake" | "unstake"
+"use client";
+import StakeIcon from "@/app/assets/stake.svg";
+import { calculateAPYPercentage } from "@/app/helpers/apyHelper";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import { getXStepMarket } from "../api/stepApiClient";
+import { IMarket } from "../api/types";
+import { useNotifications } from "../components/notificationContext";
+import StakeComponent from "./stakeComponent";
+import StakeInfo from "./stakeInfoComponent";
 
 export default function Stake() {
-  return (
-    <div>
-        <div className="font-bold mb-6">
-          Stake page
-        </div>
-        
-        <div className="flex gap-2 items-center flex-col sm:flex-row">
-          <button
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-          >
-            Unstake
-          </button>
+    const { showNotification } = useNotifications();
+    const [xstep, setXstep] = useState<IMarket>();
 
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="/"
-          >
-            Back to home
-          </a>
+    const apy = useMemo(
+        () => (xstep ? calculateAPYPercentage(xstep.apr) : "-"),
+        [xstep]
+    );
+
+    useEffect(() => {
+        getXStepMarket("mainnet-beta", "2021-10-14")
+            .then(setXstep)
+            .catch(() =>
+                showNotification("Couldn't get the xSTEP staking APY", "error")
+            );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+        <div className="flex flex-col items-stretch gap-5">
+            <div className="flex justify-center mt-2 mb-3 text-3xl font-bold text-white box-border">
+                <Image
+                    src={StakeIcon}
+                    width={32}
+                    height={32}
+                    alt=""
+                    className="mr-5 box-border"
+                />
+                Stake STEP
+            </div>
+
+            <div className="text-info text-center">
+                <span>Stake STEP to receive xSTEP</span>
+            </div>
+
+            <StakeInfo apy={apy} />
+
+            <StakeComponent mode={"stake"} />
         </div>
-    </div>
-  );
+    );
 }

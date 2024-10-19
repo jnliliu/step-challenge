@@ -1,11 +1,43 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNotifications } from "../components/notificationContext";
+import { LAMPORTS_PER_SOL, type PublicKey } from "@solana/web3.js";
+import {
+    createContext,
+    type ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
+import { useNotifications } from "./notificationContext";
 
 const UPDATE_BALANCE_INTERVAL_MS = 10000;
 
-export default function useWalletHelper() {
+export interface IAppWalletContext {
+    connected: boolean;
+    publicKey: PublicKey | null;
+    address?: string;
+    addressTrimmed?: string;
+    balance: number;
+    disconnect: () => Promise<void>;
+}
+
+export const AppWalletContext = createContext<IAppWalletContext | null>(null);
+
+export function useAppWallet() {
+    const appWallet = useContext(AppWalletContext);
+
+    if (!appWallet)
+        throw new Error("Make sure you call this within a AppWalletContext.");
+
+    return appWallet;
+}
+
+export default function CustomWalletProvider({
+    children,
+}: {
+    children: ReactNode;
+}) {
     const { connected, publicKey, disconnect } = useWallet();
     const { connection } = useConnection();
     const { showNotification } = useNotifications();
@@ -39,20 +71,26 @@ export default function useWalletHelper() {
     useEffect(() => {
         if (!publicKey) return;
 
-        (async function getBalanceEvery10Seconds() {
+        (async function getBalance() {
             const newBalance = await connection.getBalance(publicKey);
             setBalance(newBalance / LAMPORTS_PER_SOL);
 
-            setTimeout(getBalanceEvery10Seconds, UPDATE_BALANCE_INTERVAL_MS);
+            setTimeout(getBalance, UPDATE_BALANCE_INTERVAL_MS);
         })();
     }, [publicKey, connection, balance]);
 
-    return {
-        connected,
-        publicKey,
-        address,
-        addressTrimmed,
-        balance,
-        disconnect: disconnectWallet,
-    };
+    return (
+        <AppWalletContext.Provider
+            value={{
+                connected,
+                balance,
+                publicKey,
+                address,
+                addressTrimmed,
+                disconnect: disconnectWallet,
+            }}
+        >
+            {children}
+        </AppWalletContext.Provider>
+    );
 }

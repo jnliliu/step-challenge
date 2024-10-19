@@ -5,6 +5,8 @@
 :root {
     --background: #000000;
     --foreground: #ededed;
+    --bg-box: rgb(20, 20, 20);
+    --info-text: rgb(178, 178, 178);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,5 +25,15 @@ body {
 @layer utilities {
     .text-balance {
         text-wrap: balance;
+    }
+
+    .bg-box {
+        background: var(--bg-box);
+    }
+
+    .text-info {
+        color: var(--info-text);
+        font-size: 14px;
+        font-weight: normal;
     }
 }

@@ -1,8 +1,7 @@
-import StepLogo from "@/app/assets/step.svg";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Image from "next/image";
 import { AppWalletProvider } from "./components/appWalletProvider";
+import ConnectedPageContent from "./components/connectedPageComponent";
 import Header from "./components/header";
 import NotificationProvider from "./components/notificationContext";
 import "./styles/globals.css";
@@ -38,15 +37,9 @@ export default function RootLayout({
                         <Header></Header>
                         <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
                             <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-                                <Image
-                                    src={StepLogo}
-                                    alt="Step logo"
-                                    width={180}
-                                    height={38}
-                                    priority
-                                />
-
-                                {children}
+                                <ConnectedPageContent>
+                                    {children}
+                                </ConnectedPageContent>
                             </main>
                         </div>
                         <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>

@@ -4,7 +4,7 @@ import CopyIcon from "@/app/assets/copy.svg";
 import DisconnectIcon from "@/app/assets/disconnect.svg";
 import LinkIcon from "@/app/assets/link.svg";
 import StepLogo from "@/app/assets/step.svg";
-import useWalletHelper from "@/app/hooks/walletHelper";
+import { useAppWallet } from "@/app/components/customWalletContext";
 import "@/app/styles/button.css";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import Image from "next/image";
@@ -92,7 +92,7 @@ export default function Header() {
     const showModal = useCallback(() => walletModal.setVisible(true), []);
 
     const { connected, address, addressTrimmed, balance, disconnect } =
-        useWalletHelper();
+        useAppWallet();
 
     const [isMenuVisible, setMenuVisible] = useState(false);
 
@@ -119,6 +119,10 @@ export default function Header() {
         ),
         [balance, address, isMenuVisible]
     );
+
+    useEffect(() => {
+        if (balance) document.title = `$${balance} SOL | STEP`;
+    }, [balance]);
 
     return (
         <div className="w-full fixed flex p-5 justify-between">
