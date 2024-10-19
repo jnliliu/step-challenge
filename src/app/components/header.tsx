@@ -80,7 +80,9 @@ function ConnectedMenu({
                     <Image alt="disconnect" src={DisconnectIcon} />
                 </button>
             </div>
-            <span className="mr-5 ">Balance: {balance} SOL</span>
+            <div className="self-end">
+                <span>Balance: {balance} SOL</span>
+            </div>
         </div>
     ) : null;
 }
@@ -97,7 +99,6 @@ export default function Header() {
     const connectedSection = useMemo(
         () => (
             <>
-                <span className="mr-5">Balance: {balance}</span>
                 <button
                     className="btn btn-default connected rounded-lg btn-rounded btn-connected"
                     onClick={() => setMenuVisible(!isMenuVisible)}

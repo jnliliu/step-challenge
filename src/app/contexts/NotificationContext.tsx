@@ -76,6 +76,7 @@ export default function NotificationProvider({
                 hideAfterMs ?? 5000
             );
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         []
     );
 
@@ -94,13 +95,13 @@ export default function NotificationProvider({
     const notificationItems = notifications.map((n) => (
         <div
             key={n.id}
-            className={`notification ${n.type} px-6 py-4 border-0 rounded mb-4 min-w-96`}
+            className={`notification ${n.type} flex justify-between pl-4 py-4 border-0 rounded mb-4 max-w-full`}
         >
-            <span className="inline-block align-middle mr-8 font-semibold">
+            <span className="inline-block align-middle font-semibold flex-1 break-all">
                 {n.text}
             </span>
             <button
-                className="absolute text-2xl font-semibold leading-none right-4"
+                className="text-2xl font-semibold leading-none mx-3"
                 onClick={() => deleteNotification(n.id)}
             >
                 <span>×</span>
@@ -118,7 +119,9 @@ export default function NotificationProvider({
             {children}
 
             {notifications.length ? (
-                <div className="fixed bottom-4 left-5">{notificationItems}</div>
+                <div className="fixed bottom-0 w-full p-4">
+                    {notificationItems}
+                </div>
             ) : null}
         </NotificationContext.Provider>
     );
