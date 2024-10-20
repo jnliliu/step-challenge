@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AppWalletProvider } from "./components/appWalletProvider";
 import ConnectedPageContent from "./components/connectedPageComponent";
-import Header from "./components/header";
+import Header from "./components/header/header";
 import NotificationProvider from "./components/notificationContext";
 import "./styles/globals.css";
 

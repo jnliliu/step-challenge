@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { type WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, type PublicKey } from "@solana/web3.js";
 import {
@@ -7,6 +9,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import { useNotifications } from "./notificationContext";
@@ -19,6 +22,8 @@ export interface IAppWalletContext {
     address?: string;
     addressTrimmed?: string;
     balance: number;
+    network: WalletAdapterNetwork;
+    setNetwork: (network: WalletAdapterNetwork) => void;
     disconnect: () => Promise<void>;
 }
 
@@ -34,10 +39,15 @@ export function useAppWallet() {
 }
 
 export default function CustomWalletProvider({
+    network,
+    setNetwork,
     children,
 }: {
+    network: WalletAdapterNetwork;
+    setNetwork: (network: WalletAdapterNetwork) => void;
     children: ReactNode;
 }) {
+    const balanceTimeoutRef = useRef<NodeJS.Timeout>();
     const { connected, publicKey, disconnect } = useWallet();
     const { connection } = useConnection();
     const { showNotification } = useNotifications();
@@ -68,16 +78,37 @@ export default function CustomWalletProvider({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressTrimmed]);
 
-    useEffect(() => {
+    const getBalance = useCallback(async () => {
         if (!publicKey) return;
 
-        (async function getBalance() {
+        try {
             const newBalance = await connection.getBalance(publicKey);
             setBalance(newBalance / LAMPORTS_PER_SOL);
+        } finally {
+            balanceTimeoutRef.current = setTimeout(
+                getBalance,
+                UPDATE_BALANCE_INTERVAL_MS
+            );
+        }
+    }, [publicKey, network]);
 
-            setTimeout(getBalance, UPDATE_BALANCE_INTERVAL_MS);
-        })();
-    }, [publicKey, connection, balance]);
+    useEffect(() => {
+        if (balanceTimeoutRef.current) {
+            clearTimeout(balanceTimeoutRef.current);
+        }
+
+        if (!publicKey) {
+            return;
+        }
+
+        getBalance();
+
+        return () => {
+            if (balanceTimeoutRef.current) {
+                clearTimeout(balanceTimeoutRef.current);
+            }
+        };
+    }, [publicKey, network]);
 
     return (
         <AppWalletContext.Provider
@@ -87,6 +118,8 @@ export default function CustomWalletProvider({
                 publicKey,
                 address,
                 addressTrimmed,
+                network,
+                setNetwork,
                 disconnect: disconnectWallet,
             }}
         >

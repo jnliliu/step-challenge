@@ -14,11 +14,13 @@ import {
 import { clusterApiUrl } from "@solana/web3.js";
 import { type ReactNode, useMemo, useState } from "react";
 import CustomWalletProvider from "./customWalletContext";
+import { useNotifications } from "./notificationContext";
 
 export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
-    const [network] = useState(WalletAdapterNetwork.Devnet);
+    const [network, setNetwork] = useState(WalletAdapterNetwork.Mainnet);
     const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+    const { showNotification } = useNotifications();
 
     const wallets = useMemo(
         () => [
@@ -32,9 +34,18 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
 
     return (
         <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect>
+            <WalletProvider
+                wallets={wallets}
+                autoConnect
+                onError={(error) => showNotification(error.message, "error")}
+            >
                 <WalletModalProvider>
-                    <CustomWalletProvider>{children}</CustomWalletProvider>
+                    <CustomWalletProvider
+                        network={network}
+                        setNetwork={setNetwork}
+                    >
+                        {children}
+                    </CustomWalletProvider>
                 </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
