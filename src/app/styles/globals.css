@@ -5,15 +5,12 @@
 :root {
     --background: #000000;
     --foreground: #ededed;
-    --bg-box: rgb(20, 20, 20);
+    --color-black-semi-light: rgb(10, 10, 10);
+    --color-black-light: rgb(20, 20, 20);
     --info-text: rgb(178, 178, 178);
 }
 
 @media (prefers-color-scheme: dark) {
-    /* :root {
-        --background: #000000;
-        --foreground: #ededed;
-    } */
 }
 
 body {
@@ -28,12 +25,28 @@ body {
     }
 
     .bg-box {
-        background: var(--bg-box);
+        background: var(--color-black-light);
+    }
+
+    .bg-box-dark {
+        background: var(--color-black-semi-light);
     }
 
     .text-info {
         color: var(--info-text);
         font-size: 14px;
         font-weight: normal;
+    }
+
+    .input-number {
+        border: none;
+        outline: none;
+        -moz-appearance: textfield;
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     }
 }

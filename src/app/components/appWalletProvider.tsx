@@ -17,8 +17,7 @@ import CustomWalletProvider from "./customWalletContext";
 import { useNotifications } from "./notificationContext";
 
 export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
-    // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
-    const [network, setNetwork] = useState(WalletAdapterNetwork.Mainnet);
+    const [network, setNetwork] = useState(WalletAdapterNetwork.Devnet);
     const endpoint = useMemo(() => clusterApiUrl(network), [network]);
     const { showNotification } = useNotifications();
 

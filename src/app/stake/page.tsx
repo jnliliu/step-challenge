@@ -7,7 +7,7 @@ import { getXStepMarket } from "../api/stepApiClient";
 import { IMarket } from "../api/types";
 import { useAppWallet } from "../components/customWalletContext";
 import { useNotifications } from "../components/notificationContext";
-import StakeComponent from "./stakeComponent";
+import StakeComponent, { StakeMode } from "./stakeComponent";
 import StakeInfo from "./stakeInfoComponent";
 
 export default function Stake() {
@@ -51,7 +51,7 @@ export default function Stake() {
 
             <StakeInfo apy={apy} />
 
-            <StakeComponent mode={"stake"} />
+            <StakeComponent mode={StakeMode.stake} />
         </div>
     );
 }
