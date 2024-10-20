@@ -10,7 +10,6 @@ export interface IConnectedMenuProps {
     hideMenu: () => void;
     address?: string;
     addressTrimmed?: string;
-    balance: number;
     disconnect: () => Promise<void>;
 }
 
@@ -19,7 +18,6 @@ export default function ConnectedMenu({
     hideMenu,
     address,
     addressTrimmed,
-    balance,
     disconnect,
 }: Readonly<IConnectedMenuProps>) {
     const { showNotification } = useNotifications();
@@ -61,9 +59,6 @@ export default function ConnectedMenu({
                 <button onClick={disconnect}>
                     <Image alt="disconnect" src={DisconnectIcon} />
                 </button>
-            </div>
-            <div className="self-end">
-                <span>Balance: {balance} SOL</span>
             </div>
         </div>
     ) : null;

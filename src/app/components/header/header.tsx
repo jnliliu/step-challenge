@@ -13,17 +13,14 @@ import SettingsMenu from "./settingsMenu";
 export default function Header() {
     const walletModal = useWalletModal();
 
-    //shows the wallet connection modal
+    // shows the wallet connection modal
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const showModal = useCallback(() => walletModal.setVisible(true), []);
 
     const { connected, address, addressTrimmed, balance, disconnect } =
         useAppWallet();
 
-    // connection menu state
     const [isMenuVisible, setMenuVisible] = useState(false);
-
-    // settings menu state
     const [isSettingsMenuVisible, setSettingsMenuVisible] = useState(false);
 
     const connectedSection = useMemo(
@@ -41,12 +38,12 @@ export default function Header() {
                         hideMenu={() => setMenuVisible(false)}
                         address={address}
                         addressTrimmed={addressTrimmed}
-                        balance={balance}
                         disconnect={disconnect}
                     />
                 ) : null}
             </>
         ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [balance, address, isMenuVisible]
     );
 
@@ -74,11 +71,12 @@ export default function Header() {
     );
 
     useEffect(() => {
-        if (balance) document.title = `$${balance} SOL | STEP`;
-    }, [balance]);
+        setMenuVisible(false);
+        setSettingsMenuVisible(false);
+    }, [connected]);
 
     return (
-        <div className="w-full fixed flex p-5 justify-between">
+        <div className="w-full fixed flex p-5 justify-between bg-black">
             <Image src={StepLogo} alt="Step logo" width={111} priority />
             <div className="flex gap-2">
                 {settingsSection}

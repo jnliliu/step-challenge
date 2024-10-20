@@ -110,6 +110,13 @@ export default function CustomWalletProvider({
         };
     }, [publicKey, network]);
 
+    useEffect(() => {
+        document.title =
+            connected && balance
+                ? `$${balance} SOL | STEP`
+                : "Step Challenge - joliliu";
+    }, [balance, connected]);
+
     return (
         <AppWalletContext.Provider
             value={{
