@@ -9,5 +9,9 @@ export default function ConnectedPageContent({
 }>) {
     const { connected } = useAppWallet();
 
-    return <>{connected ? children : <DisconnectedSection />}</>;
+    return connected ? (
+        <div className="flex flex-1 items-center">{children}</div>
+    ) : (
+        <DisconnectedSection />
+    );
 }

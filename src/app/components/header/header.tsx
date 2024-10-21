@@ -76,7 +76,7 @@ export default function Header() {
     }, [connected]);
 
     return (
-        <div className="w-full fixed flex p-5 justify-between bg-black">
+        <div className="w-full fixed flex p-5 justify-between bg-black z-50">
             <Image src={StepLogo} alt="Step logo" width={111} priority />
             <div className="flex gap-2">
                 {settingsSection}

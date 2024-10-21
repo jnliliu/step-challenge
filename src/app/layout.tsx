@@ -35,14 +35,11 @@ export default function RootLayout({
                 <NotificationProvider>
                     <AppWalletProvider>
                         <Header></Header>
-                        <div className="flex">
-                            <main className="flex flex-1 flex-col gap-8 row-start-2 items-center p-5 mt-20">
-                                <ConnectedPageContent>
-                                    {children}
-                                </ConnectedPageContent>
-                            </main>
-                        </div>
-                        <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
+                        <main className="flex flex-1 flex-col gap-8 items-center justify-evenly p-5 mt-20">
+                            <ConnectedPageContent>
+                                {children}
+                            </ConnectedPageContent>
+                        </main>
                     </AppWalletProvider>
                 </NotificationProvider>
             </body>
