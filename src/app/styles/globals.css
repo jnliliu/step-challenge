@@ -49,4 +49,9 @@ body {
             margin: 0;
         }
     }
+
+    .btn-success {
+        background: rgb(0, 54, 40);
+        color: rgb(6, 214, 160);
+    }
 }

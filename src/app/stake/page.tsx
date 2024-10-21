@@ -1,13 +1,13 @@
 "use client";
 import StakeIcon from "@/app/assets/stake.svg";
-import { calculateAPYPercentage } from "@/app/helpers/apyHelper";
+import { calculateAPYPercentage } from "@/app/helpers/mathHelper";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { getXStepMarket } from "../api/stepApiClient";
 import { IMarket } from "../api/types";
 import { useAppWallet } from "../components/customWalletContext";
 import { useNotifications } from "../components/notificationContext";
-import StakeComponent, { StakeMode } from "./stakeComponent";
+import StakeComponent from "./stakeComponent";
 import StakeInfo from "./stakeInfoComponent";
 
 export default function Stake() {
@@ -51,7 +51,7 @@ export default function Stake() {
 
             <StakeInfo apy={apy} />
 
-            <StakeComponent mode={StakeMode.stake} />
+            <StakeComponent />
         </div>
     );
 }
