@@ -11,6 +11,7 @@ import {
     PhantomWalletAdapter,
     SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import { clusterApiUrl } from "@solana/web3.js";
 import { type ReactNode, useMemo, useState } from "react";
 import CustomWalletProvider from "./customWalletContext";
 import { useNotifications } from "./notificationContext";
@@ -19,7 +20,9 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     const [network, setNetwork] = useState(WalletAdapterNetwork.Mainnet);
     const endpoint = useMemo(
         () =>
-            "https://mainnet.helius-rpc.com/?api-key=715110a0-168c-4fb8-bf2e-b177945b14db" /*clusterApiUrl(network)*/,
+            // "https://mainnet.helius-rpc.com/?api-key=715110a0-168c-4fb8-bf2e-b177945b14db"
+            clusterApiUrl(network),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [network]
     );
     const { showNotification } = useNotifications();

@@ -17,7 +17,7 @@ import { getStepTokens } from "../api/stepApiClient";
 import { IStepTokenMap, StepToken } from "../api/types";
 import { useNotifications } from "./notificationContext";
 
-// const UPDATE_BALANCE_INTERVAL_MS = 10000;
+const UPDATE_BALANCE_INTERVAL_MS = 10000;
 
 export interface IAppWalletContext {
     connected: boolean;
@@ -149,15 +149,13 @@ export default function CustomWalletProvider({
     async function getBalances() {
         if (!publicKey) return;
 
-        await getWalletBalance();
-        await getTokenAccounts();
         try {
-            // await Promise.all([getWalletBalance(), getTokenAccounts()]);
+            await Promise.all([getWalletBalance(), getTokenAccounts()]);
         } finally {
-            // balanceTimeoutRef.current = setTimeout(
-            //     getBalances,
-            //     UPDATE_BALANCE_INTERVAL_MS
-            // );
+            balanceTimeoutRef.current = setTimeout(
+                getBalances,
+                UPDATE_BALANCE_INTERVAL_MS
+            );
         }
     }
 
