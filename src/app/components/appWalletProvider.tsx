@@ -13,9 +13,8 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { type ReactNode, useMemo, useState } from "react";
-import { HELIUS_MAINNET_RPC } from "../constants/rpc";
+import { HELIUS_MAINNET_RPC } from "../constants/urls";
 import CustomWalletProvider from "./customWalletContext";
-import { useNotifications } from "./notificationContext";
 
 export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     const [network, setNetwork] = useState(WalletAdapterNetwork.Mainnet);
@@ -26,7 +25,6 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
                 : clusterApiUrl(network),
         [network]
     );
-    const { showNotification } = useNotifications();
 
     const wallets = useMemo(
         () => [
@@ -42,7 +40,7 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
             <WalletProvider
                 wallets={wallets}
                 autoConnect
-                onError={(error) => showNotification(error.message, "error")}
+                onError={(error) => console.log(error.message, error)}
             >
                 <WalletModalProvider>
                     <CustomWalletProvider

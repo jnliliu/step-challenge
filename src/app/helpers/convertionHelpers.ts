@@ -10,15 +10,22 @@ export const calculateAPYPercentage = (apr: number) => {
     return apyPercentage.toFixed(2) + "%";
 };
 
-export const getFomattedAmount = (bigIntValue: bigint, decimalPlaces: number) =>
+export const getDecimalAmount = (bigIntValue: bigint, decimalPlaces: number) =>
     Number(bigIntValue) / Math.pow(10, decimalPlaces);
 
-export const getAmount = (value: number, decimalPlaces: number) =>
+export const getAmountFromDecimal = (value: number, decimalPlaces: number) =>
     value * Math.pow(10, decimalPlaces);
 
-export const formatCurrency = (amount: number) =>
+export const formatCurrency = (
+    amount: number,
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 2
+) =>
     new Intl.NumberFormat("en-US", {
         style: "decimal",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits,
+        maximumFractionDigits,
     }).format(amount);
+
+export const formattedCurrencyToNumber = (formattedValue: string) =>
+    Number(formattedValue.replace(/,/g, ""));

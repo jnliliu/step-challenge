@@ -1,8 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { Account, unpackAccount } from "@solana/spl-token";
+import { Account, TOKEN_PROGRAM_ID, unpackAccount } from "@solana/spl-token";
 import { type WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
     createContext,
     type ReactNode,
@@ -10,15 +9,13 @@ import {
     useContext,
     useEffect,
     useMemo,
-    useRef,
     useState,
 } from "react";
-import { getStepTokens } from "../api/stepApiClient";
-import { IStepTokenMap, StepToken } from "../api/types";
+import { getPrices } from "../api/stepApiClient";
+import { ITokenPrices, StepToken } from "../api/types";
+import { DECIMAL_PLACES, STEP_MINT, XSTEP_MINT } from "../constants/keys";
+import { getDecimalAmount } from "../helpers/convertionHelpers";
 import { useNotifications } from "./notificationContext";
-
-// const UPDATE_BALANCE_INTERVAL_MS = 10000;
-
 export interface IAppWalletContext {
     connected: boolean;
     publicKey: PublicKey | null;
@@ -26,11 +23,11 @@ export interface IAppWalletContext {
     addressTrimmed?: string;
     balance: number;
     network: WalletAdapterNetwork;
-    stepTokens?: IStepTokenMap;
-    tokenAccounts?: IStepTokenAccounts;
-    programId?: PublicKey;
+    tokenAccounts: Account[];
+    stepTokenAccounts: IStepTokenAccounts;
     setNetwork: (network: WalletAdapterNetwork) => void;
     disconnect: () => Promise<void>;
+    updateTokensAndPrices: () => Promise<void>;
 }
 
 export type IStepTokenAccounts = {
@@ -57,16 +54,12 @@ export default function CustomWalletProvider({
     setNetwork: (network: WalletAdapterNetwork) => void;
     children: ReactNode;
 }) {
-    const balanceTimeoutRef = useRef<NodeJS.Timeout>();
     const { connected, publicKey, disconnect } = useWallet();
     const { connection } = useConnection();
     const { showNotification } = useNotifications();
 
-    const [stepTokens, setStepTokens] = useState<IStepTokenMap>();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [programId, setProgramId] = useState<PublicKey>();
-    const [balance, setBalance] = useState<number>(0);
-    const [tokenAccounts, setTokenAccounts] = useState<IStepTokenAccounts>();
+    const [tokenAccounts, setTokenAccounts] = useState<Account[]>([]);
+    const [tokenPrices, setTokenPrices] = useState<ITokenPrices>({});
 
     const address = useMemo(() => publicKey?.toBase58(), [publicKey]);
     const addressTrimmed = useMemo(
@@ -79,128 +72,111 @@ export default function CustomWalletProvider({
         [address]
     );
 
+    const balance = useMemo(
+        () =>
+            tokenAccounts.length && Object.keys(tokenPrices).length
+                ? tokenAccounts.reduce((total, account) => {
+                      const mintAddress = account.mint.toBase58();
+                      const price = tokenPrices[mintAddress]?.price;
+
+                      return price
+                          ? total +
+                                getDecimalAmount(
+                                    account.amount,
+                                    DECIMAL_PLACES
+                                ) *
+                                    price
+                          : total;
+                  }, 0)
+                : 0,
+        [tokenAccounts, tokenPrices]
+    );
+
+    const stepTokenAccounts = useMemo<IStepTokenAccounts>(
+        () =>
+            tokenAccounts.reduce(
+                (stepAccounts, account) => {
+                    if (account.mint.equals(STEP_MINT)) {
+                        stepAccounts.STEP = account;
+                    } else if (account.mint.equals(XSTEP_MINT)) {
+                        stepAccounts.xSTEP = account;
+                    }
+
+                    return stepAccounts;
+                },
+                {
+                    STEP: null,
+                    xSTEP: null,
+                } as IStepTokenAccounts
+            ),
+        [tokenAccounts]
+    );
+
     const disconnectWallet = useCallback(async () => {
         await disconnect();
-        showNotification(`Disconnected from ${addressTrimmed}`, "info");
+        showNotification({
+            title: `Disconnected from ${addressTrimmed}`,
+            type: "info",
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressTrimmed]);
 
-    async function getStepTokenAccount(
-        tokenAddress: PublicKey,
-        programId: PublicKey
-    ) {
-        if (!publicKey) return null;
-
-        try {
-            const tokenAccount = await connection.getTokenAccountsByOwner(
-                publicKey,
-                {
-                    programId,
-                    mint: tokenAddress,
-                },
-                "confirmed"
-            );
-
-            const programAccount = tokenAccount.value[0];
-
-            if (!programAccount) return null;
-
-            return unpackAccount(
-                programAccount.pubkey,
-                programAccount.account,
-                programId
-            );
-        } catch {
-            return null;
-        }
+    async function fetchPrices() {
+        const prices = await getPrices(network);
+        setTokenPrices(prices);
     }
 
     async function getTokenAccounts() {
-        if (!publicKey || !stepTokens) return;
-
-        const pId = await getProgramId();
-        if (!pId) return;
-
-        const stepTokenAccountReq = getStepTokenAccount(
-            new PublicKey(stepTokens!.STEP.address),
-            pId
-        );
-
-        const xStepTokenAccountReq = getStepTokenAccount(
-            new PublicKey(stepTokens!.xSTEP.address),
-            pId
-        );
-
-        const [stepTokenAccount, xStepTokenAccount] = await Promise.all([
-            stepTokenAccountReq,
-            xStepTokenAccountReq,
-        ]);
-
-        setTokenAccounts({
-            [StepToken.STEP]: stepTokenAccount,
-            [StepToken.xSTEP]: xStepTokenAccount,
-        });
-    }
-
-    async function getBalances() {
         if (!publicKey) return;
 
-        try {
-            const newBalance = await connection.getBalance(publicKey);
-            setBalance(newBalance / LAMPORTS_PER_SOL);
-        } finally {
-            // balanceTimeoutRef.current = setTimeout(
-            //     getBalances,
-            //     UPDATE_BALANCE_INTERVAL_MS
-            // );
-        }
-    }
-
-    async function getProgramId() {
-        if (!stepTokens) return;
-
-        const response = await connection.getAccountInfo(
-            new PublicKey(stepTokens.STEP.address)
+        const tokenAccountsResponse = await connection.getTokenAccountsByOwner(
+            publicKey,
+            {
+                programId: TOKEN_PROGRAM_ID,
+            },
+            "confirmed"
         );
 
-        setProgramId(response?.owner);
-        return response?.owner;
+        const accounts = tokenAccountsResponse.value.map((x) =>
+            unpackAccount(x.pubkey, x.account)
+        );
+
+        setTokenAccounts(accounts);
     }
 
+    async function updateTokensAndPrices() {
+        await Promise.all([fetchPrices(), getTokenAccounts()]);
+    }
+
+    // initial fetch prices
+    useEffect(() => {
+        fetchPrices();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // handles the wallet conection notifications
     useEffect(() => {
         if (connected) {
-            showNotification(`Connected to ${addressTrimmed}`, "info");
+            showNotification({
+                title: `Connected to ${addressTrimmed}`,
+                type: "info",
+            });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connected]);
 
+    // fetch wallet token accounts
     useEffect(() => {
-        getStepTokens(network).then(setStepTokens);
-    }, [network]);
-
-    useEffect(() => {
-        if (balanceTimeoutRef.current) {
-            clearTimeout(balanceTimeoutRef.current);
-            balanceTimeoutRef.current = undefined;
-        }
-
-        if (!publicKey || !stepTokens) return;
+        if (!publicKey) return;
 
         getTokenAccounts();
-        getBalances();
-
-        return () => {
-            if (balanceTimeoutRef.current) {
-                clearTimeout(balanceTimeoutRef.current);
-                balanceTimeoutRef.current = undefined;
-            }
-        };
-    }, [publicKey, stepTokens]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [publicKey]);
 
     useEffect(() => {
         document.title =
             connected && balance
-                ? `$${balance} SOL | STEP`
+                ? `$${balance} USD | STEP`
                 : "Step Challenge - joliliu";
     }, [balance, connected]);
 
@@ -213,11 +189,11 @@ export default function CustomWalletProvider({
                 address,
                 addressTrimmed,
                 network,
-                stepTokens,
                 tokenAccounts,
-                programId,
+                stepTokenAccounts,
                 setNetwork,
                 disconnect: disconnectWallet,
+                updateTokensAndPrices,
             }}
         >
             {children}

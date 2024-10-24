@@ -30,7 +30,10 @@ export default function ConnectedMenu({
         if (!address) return;
 
         navigator.clipboard.writeText(address);
-        showNotification(`Address copied to clipboard: ${address}`, "info");
+        showNotification({
+            title: `Address copied to clipboard: ${address}`,
+            type: "info",
+        });
     };
 
     return isVisible ? (

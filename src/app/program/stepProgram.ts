@@ -41,17 +41,6 @@ export class StepProgram {
         );
     }
 
-    initialize() {
-        //setup logging event listeners
-        this.program.addEventListener("PriceChange", (e, s) => {
-            console.log("Price Change In Slot ", s);
-            console.log("From", e.oldStepPerXstepE9.toString());
-            console.log("From", e.oldStepPerXstep.toString());
-            console.log("To", e.newStepPerXstepE9.toString());
-            console.log("To", e.newStepPerXstep.toString());
-        });
-    }
-
     findNonce(): number {
         const seed = [STEP_MINT.toBuffer()];
         const [pda, bump] = web3.PublicKey.findProgramAddressSync(
@@ -69,17 +58,11 @@ export class StepProgram {
         return bump;
     }
 
-    listenPriceChange() {
-        this.program.addEventListener("PriceChange", (e, s) => {
-            console.log("Price Change In Slot ", s);
-            console.log("From", e.oldStepPerXstepE9.toString());
-            console.log("From", e.oldStepPerXstep.toString());
-            console.log("To", e.newStepPerXstepE9.toString());
-            console.log("To", e.newStepPerXstep.toString());
-        });
+    listenPriceChange(onPriceChanged: () => void) {
+        this.program.addEventListener("PriceChange", onPriceChanged);
     }
 
-    async stake(
+    stake(
         stepAccountFrom: PublicKey,
         xStepAccountTo: PublicKey,
         value: number
@@ -102,7 +85,7 @@ export class StepProgram {
             Object.entries(accounts).map(([key, v]) => [key, v.toBase58()])
         );
 
-        return await this.program.rpc.stake(nonce, new BN(value), {
+        return this.program.rpc.stake(nonce, new BN(value), {
             accounts,
         });
     }

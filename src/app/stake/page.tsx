@@ -1,6 +1,6 @@
 "use client";
 import StakeIcon from "@/app/assets/stake.svg";
-import { calculateAPYPercentage } from "@/app/helpers/mathHelper";
+import { calculateAPYPercentage } from "@/app/helpers/convertionHelpers";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { getXStepMarket } from "../api/stepApiClient";
@@ -12,22 +12,25 @@ import StakeInfo from "./stakeInfoComponent";
 
 export default function Stake() {
     const { showNotification } = useNotifications();
-    const [xstep, setXstep] = useState<IMarket>();
+    const [xStepMarket, setXstepMarket] = useState<IMarket>();
     const { network } = useAppWallet();
 
     const apy = useMemo(
         () =>
-            xstep?.apr
-                ? calculateAPYPercentage(xstep.apr)
+            xStepMarket?.apr
+                ? calculateAPYPercentage(xStepMarket.apr)
                 : "Waiting for first funding...",
-        [xstep]
+        [xStepMarket]
     );
 
     useEffect(() => {
-        getXStepMarket(network, "2021-10-14")
-            .then(setXstep)
+        getXStepMarket(network)
+            .then(setXstepMarket)
             .catch(() =>
-                showNotification("Couldn't get the xSTEP staking APY", "error")
+                showNotification({
+                    title: "Couldn't get the xSTEP staking APY",
+                    type: "error",
+                })
             );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [network]);
@@ -51,7 +54,7 @@ export default function Stake() {
 
             <StakeInfo apy={apy} />
 
-            <StakeComponent />
+            <StakeComponent pricePerXToken={xStepMarket?.stepPerXStep} />
         </div>
     );
 }

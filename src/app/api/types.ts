@@ -33,3 +33,13 @@ export interface ITokensResponse {
     tokenMap: ITokenMap;
     tokenSymbolMap: { [key: string]: string };
 }
+
+export interface ITokenPrice {
+    address: string;
+    price: number;
+    change24h: number;
+}
+
+export interface ITokenPrices {
+    [key: string]: ITokenPrice;
+}

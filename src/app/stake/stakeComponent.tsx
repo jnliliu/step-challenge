@@ -2,19 +2,20 @@
 import ArrowDownIcon from "@/app/assets/arrow-down.svg";
 import StepIcon from "@/app/assets/step-logo.png";
 import XStepIcon from "@/app/assets/xstep.svg";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import Image, { StaticImageData } from "next/image";
-import {
-    Dispatch,
-    SetStateAction,
-    useCallback,
-    useMemo,
-    useState,
-} from "react";
+import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { StepToken } from "../api/types";
 import { useAppWallet } from "../components/customWalletContext";
-import { getAmount, getFomattedAmount } from "../helpers/mathHelper";
-import { StepProgram } from "../idl/stepProgram";
+import { useNotifications } from "../components/notificationContext";
+import { DECIMAL_PLACES } from "../constants/keys";
+import {
+    formatCurrency,
+    formattedCurrencyToNumber,
+    getAmountFromDecimal,
+    getDecimalAmount,
+} from "../helpers/convertionHelpers";
+import useStepProgram from "../hooks/stepProgram";
 
 export enum StakeMode {
     stake = "stake",
@@ -25,31 +26,46 @@ interface IStakeInput {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tokenIcon: any;
     tokenText: string;
-    valueStatue: [
-        number | undefined,
-        Dispatch<SetStateAction<number | undefined>>
-    ];
+    value: number;
+    setValue?: Dispatch<SetStateAction<number>>;
 }
 
-function StakeInput({ tokenIcon, tokenText, valueStatue }: IStakeInput) {
-    const [value, setValue] = valueStatue;
+function StakeInput({ tokenIcon, tokenText, value, setValue }: IStakeInput) {
+    const displayValue: string = useMemo(() => {
+        if (!setValue && !value) return "0.00";
+
+        if (!value) return "";
+
+        return formatCurrency(value, 0, DECIMAL_PLACES);
+    }, [value, setValue]);
+
     return (
         <div className="flex items-center justify-between p-3 rounded-lg bg-black h-16 w-full">
             <div className="flex items-center font-bold">
                 <Image src={tokenIcon} alt={tokenIcon} width={28} height={28} />
                 <span>{tokenText}</span>
             </div>
-            <input
-                value={value}
-                type="number"
-                autoComplete="off"
-                placeholder="0.00"
-                className="input-number bg-transparent font-bold text-lg pl-3 text-white rounded-sm text-end"
-                style={{
-                    appearance: "textfield",
-                }}
-                onChange={(event) => setValue(parseFloat(event.target.value))}
-            />
+
+            {!setValue ? (
+                <span className="font-bold text-lg pl-3 text-white rounded-sm text-end">
+                    {displayValue || "0.00"}
+                </span>
+            ) : (
+                <input
+                    value={displayValue}
+                    type="text"
+                    maxLength={22}
+                    autoComplete="off"
+                    placeholder="0.00"
+                    className="input-number bg-transparent font-bold text-lg pl-3 text-white rounded-sm text-end"
+                    style={{
+                        appearance: "textfield",
+                    }}
+                    onChange={(event) =>
+                        setValue(formattedCurrencyToNumber(event.target.value))
+                    }
+                />
+            )}
         </div>
     );
 }
@@ -60,33 +76,50 @@ export type TokenConfig = {
     amount: number;
 };
 
-const TOKEN_DECIMALS = 9;
-
-export default function StakeComponent() {
+export default function StakeComponent({
+    pricePerXToken,
+}: {
+    pricePerXToken?: number;
+}) {
     const [isWaiting, setIsWaiting] = useState(false);
-    const [stakeValue, setStakeValue] = useState<number>();
-    const [receiveValue, setReceiveValue] = useState<number>();
+    const [stakeValue, setStakeValue] = useState<number>(0);
     const [stakeMode, setStakeMode] = useState(StakeMode.stake);
     const anchorWallet = useAnchorWallet();
-    const { tokenAccounts } = useAppWallet();
-    const { connection } = useConnection();
-    // const { program } = useStepProgram(programId);
+    const { stepTokenAccounts, updateTokensAndPrices } = useAppWallet();
+    const { showNotification } = useNotifications();
+    const { stake, unstake } = useStepProgram();
 
     const stepAmount = useMemo(
         () =>
-            tokenAccounts?.STEP?.amount
-                ? getFomattedAmount(tokenAccounts.STEP.amount, TOKEN_DECIMALS)
+            stepTokenAccounts.STEP?.amount
+                ? getDecimalAmount(
+                      stepTokenAccounts.STEP.amount,
+                      DECIMAL_PLACES
+                  )
                 : 0,
-        [tokenAccounts]
+        [stepTokenAccounts.STEP]
     );
 
     const xStepAmount = useMemo(
         () =>
-            tokenAccounts?.xSTEP?.amount
-                ? getFomattedAmount(tokenAccounts.xSTEP.amount, TOKEN_DECIMALS)
+            stepTokenAccounts.xSTEP?.amount
+                ? getDecimalAmount(
+                      stepTokenAccounts.xSTEP.amount,
+                      DECIMAL_PLACES
+                  )
                 : 0,
-        [tokenAccounts]
+        [stepTokenAccounts.xSTEP]
     );
+
+    const receiveValue = useMemo(() => {
+        if (!pricePerXToken || !stakeValue) return 0;
+
+        if (stakeMode === StakeMode.stake) {
+            return stakeValue / pricePerXToken;
+        }
+
+        return stakeValue * pricePerXToken;
+    }, [stakeValue, pricePerXToken, stakeMode]);
 
     const [stakeConfig, receiveConfig] = useMemo<[TokenConfig, TokenConfig]>(
         () => {
@@ -148,44 +181,56 @@ export default function StakeComponent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stakeValue, stakeConfig]);
 
-    const onStakeButtonClick = useCallback(async () => {
+    async function onStakeButtonClick() {
         if (
             !stakeValue ||
             !anchorWallet ||
-            !tokenAccounts?.STEP?.address ||
-            !tokenAccounts.xSTEP?.address
+            !stepTokenAccounts.STEP ||
+            !stepTokenAccounts.xSTEP
         )
             return;
 
         setIsWaiting(true);
+        showNotification({
+            title: "Approve transactions from your wallet.",
+            type: "info",
+        });
+
         try {
-            console.log("Creating program instance");
-            const program = new StepProgram({
-                anchorWallet,
-                connection,
+            const value = getAmountFromDecimal(stakeValue, DECIMAL_PLACES);
+            const signature =
+                stakeMode === StakeMode.stake
+                    ? await stake(value)
+                    : await unstake(value);
+
+            console.log(`${stakeMode} submitted`, signature);
+            // showNotification({
+            //     title: "You are staking STEP",
+            //     description: "Confirmation in progress...",
+            //     link: `https://solscan.io/tx/${signature}`,
+            //     linkText: "View on solscan",
+            //     type: "info",
+            // });
+
+            showNotification({
+                title: `Staked ${stakeValue} ${stakeConfig.tokenType}`,
+                description: `and received ${receiveValue} ${receiveConfig.tokenType}`,
+                link: `https://solscan.io/tx/${signature}`,
+                linkText: "View on solscan",
+                type: "info",
             });
-
-            const value = getAmount(stakeValue, TOKEN_DECIMALS);
-            console.log(
-                "Staking",
-                value,
-                tokenAccounts.STEP.address,
-                tokenAccounts.xSTEP.address
-            );
-            const result = await program.stake(
-                tokenAccounts.STEP.address,
-                tokenAccounts.xSTEP.address,
-                value
-            );
-            console.log("Staked", result);
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-            console.log("Program error", error?.message ?? error);
+            await updateTokensAndPrices();
+        } catch {
+            showNotification({
+                title: "You declined this transaction.",
+                description:
+                    "You declined this transaction in your wallet, or the transaction has timed out.",
+                type: "info",
+            });
         } finally {
             setIsWaiting(false);
         }
-    }, [stakeValue, tokenAccounts, anchorWallet, connection]);
+    }
 
     return (
         <div className="flex flex-col items-stretch">
@@ -203,7 +248,8 @@ export default function StakeComponent() {
                         <StakeInput
                             tokenIcon={stakeConfig.icon}
                             tokenText={stakeConfig.tokenType}
-                            valueStatue={[stakeValue, setStakeValue]}
+                            value={stakeValue}
+                            setValue={setStakeValue}
                         />
                     </div>
                     <div className="flex-1 flex justify-center">
@@ -217,13 +263,13 @@ export default function StakeComponent() {
                         <StakeInput
                             tokenIcon={receiveConfig.icon}
                             tokenText={receiveConfig.tokenType}
-                            valueStatue={[receiveValue, setReceiveValue]}
+                            value={receiveValue}
                         />
                     </div>
                 </div>
             </div>
             <button
-                className={`${
+                className={`btn ${
                     !buttonConfig.disabled ? "btn-success capitalize" : ""
                 } bg-box mt-5 p-3 text-base font-extrabold rounded-sm h-16`}
                 disabled={buttonConfig.disabled || isWaiting}

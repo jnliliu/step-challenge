@@ -1,6 +1,11 @@
-import { IMarket, IStepTokenMap, ITokensResponse, StepToken } from "./types";
-
-export const STEP_API_BASE_URL = "https://api.step.finance/v1";
+import { STEP_API_BASE_URL } from "../constants/urls";
+import {
+    IMarket,
+    IStepTokenMap,
+    ITokenPrices,
+    ITokensResponse,
+    StepToken,
+} from "./types";
 
 const fetchStepApi = <T = unknown>(endpoint: string, init: RequestInit) =>
     fetch(`${STEP_API_BASE_URL}${endpoint}`, init).then((res) => {
@@ -9,11 +14,16 @@ const fetchStepApi = <T = unknown>(endpoint: string, init: RequestInit) =>
         return res.json() as Promise<T>;
     });
 
+export const getPrices = (cluster: string) =>
+    fetchStepApi<ITokenPrices>(`/v2/markets/prices?cluster=${cluster}`, {
+        method: "GET",
+    });
+
 export const getStepTokens = async (
     cluster: string
 ): Promise<IStepTokenMap> => {
     const tokens = await fetchStepApi<ITokensResponse>(
-        `/markets/tokens?cluster=${cluster}`,
+        `/v1/markets/tokens?cluster=${cluster}`,
         {
             method: "GET",
         }
@@ -28,12 +38,9 @@ export const getStepTokens = async (
     };
 };
 
-export const getXStepMarket = (
-    cluster: string,
-    fundingStart: string
-): Promise<IMarket> =>
+export const getXStepMarket = (cluster: string): Promise<IMarket> =>
     fetchStepApi<IMarket>(
-        `/markets/xstep?cluster=${cluster}&funding_start=${fundingStart}`,
+        `/v1/markets/xstep?cluster=${cluster}&funding_start="2021-10-14"`,
         {
             method: "GET",
         }

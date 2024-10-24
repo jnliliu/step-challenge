@@ -1,5 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
 
+export const TOKEN_PROGRAM_ID = new PublicKey(
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+);
+
 export const STEP_MINT = new PublicKey(
     "StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT"
 );
@@ -15,3 +19,5 @@ export const XSTEP_PROGRAM_ID = new PublicKey(
 export const XSTEP_TOKEN_VAULT = new PublicKey(
     "ANYxxG365hutGYaTdtUQG8u2hC4dFX9mFHKuzy9ABQJi"
 );
+
+export const DECIMAL_PLACES = 9;
