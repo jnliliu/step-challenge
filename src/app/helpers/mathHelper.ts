@@ -10,8 +10,11 @@ export const calculateAPYPercentage = (apr: number) => {
     return apyPercentage.toFixed(2) + "%";
 };
 
-export const getAmount = (bigIntValue: bigint, decimalPlaces: number) =>
+export const getFomattedAmount = (bigIntValue: bigint, decimalPlaces: number) =>
     Number(bigIntValue) / Math.pow(10, decimalPlaces);
+
+export const getAmount = (value: number, decimalPlaces: number) =>
+    value * Math.pow(10, decimalPlaces);
 
 export const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {

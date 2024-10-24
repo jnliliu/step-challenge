@@ -11,19 +11,19 @@ import {
     PhantomWalletAdapter,
     SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import { clusterApiUrl } from "@solana/web3.js";
 import { type ReactNode, useMemo, useState } from "react";
+import { HELIUS_MAINNET_RPC } from "../constants/rpc";
 import CustomWalletProvider from "./customWalletContext";
 import { useNotifications } from "./notificationContext";
-
-const RPC =
-    "https://mainnet.helius-rpc.com/?api-key=715110a0-168c-4fb8-bf2e-b177945b14db";
 
 export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
     const [network, setNetwork] = useState(WalletAdapterNetwork.Mainnet);
     const endpoint = useMemo(
-        () => RPC,
-        // clusterApiUrl(network),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        () =>
+            network === WalletAdapterNetwork.Mainnet
+                ? HELIUS_MAINNET_RPC
+                : clusterApiUrl(network),
         [network]
     );
     const { showNotification } = useNotifications();
@@ -34,8 +34,7 @@ export const AppWalletProvider = ({ children }: { children: ReactNode }) => {
             new SolflareWalletAdapter(),
             new MathWalletAdapter(),
         ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [network]
+        []
     );
 
     return (

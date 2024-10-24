@@ -17,7 +17,7 @@ import { getStepTokens } from "../api/stepApiClient";
 import { IStepTokenMap, StepToken } from "../api/types";
 import { useNotifications } from "./notificationContext";
 
-const UPDATE_BALANCE_INTERVAL_MS = 10000;
+// const UPDATE_BALANCE_INTERVAL_MS = 10000;
 
 export interface IAppWalletContext {
     connected: boolean;
@@ -67,7 +67,6 @@ export default function CustomWalletProvider({
     const [programId, setProgramId] = useState<PublicKey>();
     const [balance, setBalance] = useState<number>(0);
     const [tokenAccounts, setTokenAccounts] = useState<IStepTokenAccounts>();
-    // const [tokenBalances, setTokenBalances] = useState<IStepTokenBalances>();
 
     const address = useMemo(() => publicKey?.toBase58(), [publicKey]);
     const addressTrimmed = useMemo(
@@ -88,9 +87,10 @@ export default function CustomWalletProvider({
 
     async function getStepTokenAccount(
         tokenAddress: PublicKey,
-        publicKey: PublicKey,
         programId: PublicKey
     ) {
+        if (!publicKey) return null;
+
         try {
             const tokenAccount = await connection.getTokenAccountsByOwner(
                 publicKey,
@@ -116,23 +116,25 @@ export default function CustomWalletProvider({
     }
 
     async function getTokenAccounts() {
-        if (!publicKey) return;
+        if (!publicKey || !stepTokens) return;
 
         const pId = await getProgramId();
-        console.log("ProgramId: ", pId);
         if (!pId) return;
 
-        const stepTokenAccount = await getStepTokenAccount(
+        const stepTokenAccountReq = getStepTokenAccount(
             new PublicKey(stepTokens!.STEP.address),
-            publicKey,
             pId
         );
 
-        const xStepTokenAccount = await getStepTokenAccount(
+        const xStepTokenAccountReq = getStepTokenAccount(
             new PublicKey(stepTokens!.xSTEP.address),
-            publicKey,
             pId
         );
+
+        const [stepTokenAccount, xStepTokenAccount] = await Promise.all([
+            stepTokenAccountReq,
+            xStepTokenAccountReq,
+        ]);
 
         setTokenAccounts({
             [StepToken.STEP]: stepTokenAccount,
@@ -140,22 +142,17 @@ export default function CustomWalletProvider({
         });
     }
 
-    async function getWalletBalance() {
-        if (!publicKey) return 0;
-        const newBalance = await connection.getBalance(publicKey);
-        setBalance(newBalance / LAMPORTS_PER_SOL);
-    }
-
     async function getBalances() {
         if (!publicKey) return;
 
         try {
-            await Promise.all([getWalletBalance(), getTokenAccounts()]);
+            const newBalance = await connection.getBalance(publicKey);
+            setBalance(newBalance / LAMPORTS_PER_SOL);
         } finally {
-            balanceTimeoutRef.current = setTimeout(
-                getBalances,
-                UPDATE_BALANCE_INTERVAL_MS
-            );
+            // balanceTimeoutRef.current = setTimeout(
+            //     getBalances,
+            //     UPDATE_BALANCE_INTERVAL_MS
+            // );
         }
     }
 
@@ -189,6 +186,7 @@ export default function CustomWalletProvider({
 
         if (!publicKey || !stepTokens) return;
 
+        getTokenAccounts();
         getBalances();
 
         return () => {

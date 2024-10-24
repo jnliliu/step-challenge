@@ -2,11 +2,19 @@
 import ArrowDownIcon from "@/app/assets/arrow-down.svg";
 import StepIcon from "@/app/assets/step-logo.png";
 import XStepIcon from "@/app/assets/xstep.svg";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import Image, { StaticImageData } from "next/image";
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import {
+    Dispatch,
+    SetStateAction,
+    useCallback,
+    useMemo,
+    useState,
+} from "react";
 import { StepToken } from "../api/types";
 import { useAppWallet } from "../components/customWalletContext";
-import { getAmount } from "../helpers/mathHelper";
+import { getAmount, getFomattedAmount } from "../helpers/mathHelper";
+import { StepProgram } from "../idl/stepProgram";
 
 export enum StakeMode {
     stake = "stake",
@@ -52,16 +60,22 @@ export type TokenConfig = {
     amount: number;
 };
 
+const TOKEN_DECIMALS = 9;
+
 export default function StakeComponent() {
+    const [isWaiting, setIsWaiting] = useState(false);
     const [stakeValue, setStakeValue] = useState<number>();
     const [receiveValue, setReceiveValue] = useState<number>();
     const [stakeMode, setStakeMode] = useState(StakeMode.stake);
+    const anchorWallet = useAnchorWallet();
     const { tokenAccounts } = useAppWallet();
+    const { connection } = useConnection();
+    // const { program } = useStepProgram(programId);
 
     const stepAmount = useMemo(
         () =>
             tokenAccounts?.STEP?.amount
-                ? getAmount(tokenAccounts.STEP.amount, 9)
+                ? getFomattedAmount(tokenAccounts.STEP.amount, TOKEN_DECIMALS)
                 : 0,
         [tokenAccounts]
     );
@@ -69,7 +83,7 @@ export default function StakeComponent() {
     const xStepAmount = useMemo(
         () =>
             tokenAccounts?.xSTEP?.amount
-                ? getAmount(tokenAccounts.xSTEP.amount, 9)
+                ? getFomattedAmount(tokenAccounts.xSTEP.amount, TOKEN_DECIMALS)
                 : 0,
         [tokenAccounts]
     );
@@ -134,6 +148,45 @@ export default function StakeComponent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stakeValue, stakeConfig]);
 
+    const onStakeButtonClick = useCallback(async () => {
+        if (
+            !stakeValue ||
+            !anchorWallet ||
+            !tokenAccounts?.STEP?.address ||
+            !tokenAccounts.xSTEP?.address
+        )
+            return;
+
+        setIsWaiting(true);
+        try {
+            console.log("Creating program instance");
+            const program = new StepProgram({
+                anchorWallet,
+                connection,
+            });
+
+            const value = getAmount(stakeValue, TOKEN_DECIMALS);
+            console.log(
+                "Staking",
+                value,
+                tokenAccounts.STEP.address,
+                tokenAccounts.xSTEP.address
+            );
+            const result = await program.stake(
+                tokenAccounts.STEP.address,
+                tokenAccounts.xSTEP.address,
+                value
+            );
+            console.log("Staked", result);
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            console.log("Program error", error?.message ?? error);
+        } finally {
+            setIsWaiting(false);
+        }
+    }, [stakeValue, tokenAccounts, anchorWallet, connection]);
+
     return (
         <div className="flex flex-col items-stretch">
             <div className="flex flex-col">
@@ -173,7 +226,8 @@ export default function StakeComponent() {
                 className={`${
                     !buttonConfig.disabled ? "btn-success capitalize" : ""
                 } bg-box mt-5 p-3 text-base font-extrabold rounded-sm h-16`}
-                disabled={buttonConfig.disabled}
+                disabled={buttonConfig.disabled || isWaiting}
+                onClick={onStakeButtonClick}
             >
                 <span>{buttonConfig.text}</span>
             </button>
