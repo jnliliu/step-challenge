@@ -9,9 +9,8 @@ import {
 } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppWallet } from "../components/customWalletContext";
-import { useNotifications } from "../components/notificationContext";
 import {
     STEP_MINT,
     XSTEP_MINT,
@@ -23,7 +22,6 @@ export default function useStepProgram() {
     const { connection } = useConnection();
     const anchorWallet = useAnchorWallet();
     const { publicKey, stepTokenAccounts } = useAppWallet();
-    const { showNotification } = useNotifications();
     const [nonce, setNonce] = useState<number>();
 
     const program = useMemo(() => {
@@ -41,99 +39,88 @@ export default function useStepProgram() {
         return new Program(StepStakingJSON, XSTEP_PROGRAM_ID, provider);
     }, [connection, anchorWallet]);
 
-    function onPriceChange() {
-        showNotification({
-            title: "You are staking STEP",
-            description: "Confirmation in progress...",
-            type: "info",
+    async function confirmTransaction(txSignature: string) {
+        if (!program) return null;
+
+        const connection = program.provider.connection;
+        const latestBlockhash = await connection.getLatestBlockhash();
+        const confirmation = await connection.confirmTransaction({
+            signature: txSignature,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        });
+
+        return confirmation.value;
+    }
+
+    async function stake(value: number) {
+        if (
+            !publicKey ||
+            !program ||
+            !nonce ||
+            !stepTokenAccounts.STEP ||
+            !stepTokenAccounts.xSTEP
+        )
+            return null;
+
+        const accounts = {
+            tokenMint: STEP_MINT,
+            xTokenMint: XSTEP_MINT,
+            tokenFrom: stepTokenAccounts.STEP.address,
+            tokenFromAuthority: publicKey,
+            tokenVault: XSTEP_TOKEN_VAULT,
+            xTokenTo: stepTokenAccounts.xSTEP.address,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        };
+
+        console.log(
+            "stake request",
+            value,
+            Object.entries(accounts).map(([key, v]) => [key, v.toBase58()])
+        );
+
+        return await program.rpc.stake(nonce, new BN(value), {
+            accounts,
         });
     }
 
-    const stake = useCallback(
-        (value: number) => {
-            if (
-                !publicKey ||
-                !program ||
-                !nonce ||
-                !stepTokenAccounts.STEP ||
-                !stepTokenAccounts.xSTEP
-            )
-                return;
+    async function unstake(value: number) {
+        if (
+            !publicKey ||
+            !program ||
+            !nonce ||
+            !stepTokenAccounts.STEP ||
+            !stepTokenAccounts.xSTEP
+        )
+            return;
 
-            const accounts = {
-                tokenMint: STEP_MINT,
-                xTokenMint: XSTEP_MINT,
-                tokenFrom: stepTokenAccounts.STEP.address,
-                tokenFromAuthority: publicKey,
-                tokenVault: XSTEP_TOKEN_VAULT,
-                xTokenTo: stepTokenAccounts.xSTEP.address,
-                tokenProgram: TOKEN_PROGRAM_ID,
-            };
+        const accounts = {
+            tokenMint: STEP_MINT,
+            xTokenMint: XSTEP_MINT,
+            xTokenFrom: stepTokenAccounts.xSTEP.address,
+            xTokenFromAuthority: publicKey,
+            tokenVault: XSTEP_TOKEN_VAULT,
+            tokenTo: stepTokenAccounts.STEP.address,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        };
 
-            console.log(
-                "stake request",
-                value,
-                Object.entries(accounts).map(([key, v]) => [key, v.toBase58()])
-            );
+        console.log(
+            "unstake request",
+            value,
+            Object.entries(accounts).map(([key, v]) => [key, v.toBase58()])
+        );
 
-            return program.rpc.stake(nonce, new BN(value), {
-                accounts,
-            });
-        },
-        [
-            publicKey,
-            program,
-            nonce,
-            stepTokenAccounts.STEP,
-            stepTokenAccounts.xSTEP,
-        ]
-    );
-
-    const unstake = useCallback(
-        (value: number) => {
-            if (
-                !publicKey ||
-                !program ||
-                !nonce ||
-                !stepTokenAccounts.STEP ||
-                !stepTokenAccounts.xSTEP
-            )
-                return;
-
-            const accounts = {
-                tokenMint: STEP_MINT,
-                xTokenMint: XSTEP_MINT,
-                xTokenFrom: stepTokenAccounts.xSTEP.address,
-                xTokenFromAuthority: publicKey,
-                tokenVault: XSTEP_TOKEN_VAULT,
-                tokenTo: stepTokenAccounts.STEP.address,
-                tokenProgram: TOKEN_PROGRAM_ID,
-            };
-
-            console.log(
-                "unstake request",
-                value,
-                Object.entries(accounts).map(([key, v]) => [key, v.toBase58()])
-            );
-            return program.rpc.unstake(nonce, new BN(value), {
-                accounts,
-            });
-        },
-        [
-            publicKey,
-            program,
-            nonce,
-            stepTokenAccounts.STEP,
-            stepTokenAccounts.xSTEP,
-        ]
-    );
+        return await program.rpc.unstake(nonce, new BN(value), {
+            accounts,
+        });
+    }
 
     useEffect(() => {
         if (!program) {
             return;
         }
 
-        const listener = program.addEventListener("PriceChange", onPriceChange);
+        const listener = program.addEventListener("PriceChange", console.log);
 
         // Get nonce
         const seed = [STEP_MINT.toBuffer()];
@@ -157,5 +144,6 @@ export default function useStepProgram() {
         program,
         stake,
         unstake,
+        confirmTransaction,
     };
 }

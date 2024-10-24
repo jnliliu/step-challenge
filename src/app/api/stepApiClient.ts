@@ -17,6 +17,7 @@ const fetchStepApi = <T = unknown>(endpoint: string, init: RequestInit) =>
 export const getPrices = (cluster: string) =>
     fetchStepApi<ITokenPrices>(`/v2/markets/prices?cluster=${cluster}`, {
         method: "GET",
+        cache: "no-cache",
     });
 
 export const getStepTokens = async (
@@ -26,6 +27,7 @@ export const getStepTokens = async (
         `/v1/markets/tokens?cluster=${cluster}`,
         {
             method: "GET",
+            cache: "no-cache",
         }
     );
 
@@ -43,5 +45,6 @@ export const getXStepMarket = (cluster: string): Promise<IMarket> =>
         `/v1/markets/xstep?cluster=${cluster}&funding_start="2021-10-14"`,
         {
             method: "GET",
+            cache: "no-cache",
         }
     );

@@ -22,6 +22,10 @@ export interface IStepProgramOptions {
     anchorWallet: AnchorWallet;
 }
 
+/**
+ * @deprecated This class is deprecated and will be removed in the next release.
+ * Please use the `useStepProgram` react hook instead.
+ */
 export class StepProgram {
     public readonly provider: AnchorProvider;
     public readonly program: Program<StepStakingIDL>;

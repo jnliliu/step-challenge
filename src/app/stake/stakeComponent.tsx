@@ -4,70 +4,21 @@ import StepIcon from "@/app/assets/step-logo.png";
 import XStepIcon from "@/app/assets/xstep.svg";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import Image, { StaticImageData } from "next/image";
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { StepToken } from "../api/types";
 import { useAppWallet } from "../components/customWalletContext";
 import { useNotifications } from "../components/notificationContext";
 import { DECIMAL_PLACES } from "../constants/keys";
 import {
-    formatCurrency,
-    formattedCurrencyToNumber,
     getAmountFromDecimal,
     getDecimalAmount,
 } from "../helpers/convertionHelpers";
 import useStepProgram from "../hooks/stepProgram";
+import StakeInput from "./stakeInput";
 
 export enum StakeMode {
     stake = "stake",
     unstake = "unstake",
-}
-
-interface IStakeInput {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tokenIcon: any;
-    tokenText: string;
-    value: number;
-    setValue?: Dispatch<SetStateAction<number>>;
-}
-
-function StakeInput({ tokenIcon, tokenText, value, setValue }: IStakeInput) {
-    const displayValue: string = useMemo(() => {
-        if (!setValue && !value) return "0.00";
-
-        if (!value) return "";
-
-        return formatCurrency(value, 0, DECIMAL_PLACES);
-    }, [value, setValue]);
-
-    return (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-black h-16 w-full">
-            <div className="flex items-center font-bold">
-                <Image src={tokenIcon} alt={tokenIcon} width={28} height={28} />
-                <span>{tokenText}</span>
-            </div>
-
-            {!setValue ? (
-                <span className="font-bold text-lg pl-3 text-white rounded-sm text-end">
-                    {displayValue || "0.00"}
-                </span>
-            ) : (
-                <input
-                    value={displayValue}
-                    type="text"
-                    maxLength={22}
-                    autoComplete="off"
-                    placeholder="0.00"
-                    className="input-number bg-transparent font-bold text-lg pl-3 text-white rounded-sm text-end"
-                    style={{
-                        appearance: "textfield",
-                    }}
-                    onChange={(event) =>
-                        setValue(formattedCurrencyToNumber(event.target.value))
-                    }
-                />
-            )}
-        </div>
-    );
 }
 
 export type TokenConfig = {
@@ -87,7 +38,7 @@ export default function StakeComponent({
     const anchorWallet = useAnchorWallet();
     const { stepTokenAccounts, updateTokensAndPrices } = useAppWallet();
     const { showNotification } = useNotifications();
-    const { stake, unstake } = useStepProgram();
+    const { stake, unstake, confirmTransaction } = useStepProgram();
 
     const stepAmount = useMemo(
         () =>
@@ -97,7 +48,7 @@ export default function StakeComponent({
                       DECIMAL_PLACES
                   )
                 : 0,
-        [stepTokenAccounts.STEP]
+        [stepTokenAccounts.STEP?.amount]
     );
 
     const xStepAmount = useMemo(
@@ -108,7 +59,7 @@ export default function StakeComponent({
                       DECIMAL_PLACES
                   )
                 : 0,
-        [stepTokenAccounts.xSTEP]
+        [stepTokenAccounts.xSTEP?.amount]
     );
 
     const receiveValue = useMemo(() => {
@@ -161,6 +112,12 @@ export default function StakeComponent({
     );
 
     const buttonConfig = useMemo<{ text: string; disabled: boolean }>(() => {
+        if (isWaiting)
+            return {
+                text: `${stakeMode.substring(0, stakeMode.length - 1)}ing...`,
+                disabled: true,
+            };
+
         if (!stakeValue)
             return {
                 text: "Enter an amount",
@@ -179,7 +136,7 @@ export default function StakeComponent({
             disabled: false,
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stakeValue, stakeConfig]);
+    }, [stakeValue, { ...stakeConfig }, isWaiting]);
 
     async function onStakeButtonClick() {
         if (
@@ -196,30 +153,37 @@ export default function StakeComponent({
             type: "info",
         });
 
+        const isStake = stakeMode === StakeMode.stake;
         try {
             const value = getAmountFromDecimal(stakeValue, DECIMAL_PLACES);
-            const signature =
-                stakeMode === StakeMode.stake
-                    ? await stake(value)
-                    : await unstake(value);
+            const txSignature = isStake
+                ? await stake(value)
+                : await unstake(value);
 
-            console.log(`${stakeMode} submitted`, signature);
-            // showNotification({
-            //     title: "You are staking STEP",
-            //     description: "Confirmation in progress...",
-            //     link: `https://solscan.io/tx/${signature}`,
-            //     linkText: "View on solscan",
-            //     type: "info",
-            // });
+            console.log(`${stakeMode} submitted`, txSignature);
+            if (!txSignature) return;
 
             showNotification({
-                title: `Staked ${stakeValue} ${stakeConfig.tokenType}`,
-                description: `and received ${receiveValue} ${receiveConfig.tokenType}`,
-                link: `https://solscan.io/tx/${signature}`,
-                linkText: "View on solscan",
+                title: isStake
+                    ? "You are staking STEP"
+                    : "You are unstaking xSTEP",
+                description: "Confirmation in progress...",
                 type: "info",
+                link: `https://solscan.io/tx/${txSignature}`,
+                linkText: "View on solscan",
             });
-            await updateTokensAndPrices();
+
+            const confirmation = await confirmTransaction(txSignature);
+
+            if (confirmation?.err === null) {
+                showNotification({
+                    title: `Staked ${stakeValue} ${stakeConfig.tokenType}`,
+                    description: `and received ${receiveValue} ${receiveConfig.tokenType}`,
+                    link: `https://solscan.io/tx/${txSignature}`,
+                    linkText: "View on solscan",
+                    type: "info",
+                });
+            }
         } catch {
             showNotification({
                 title: "You declined this transaction.",
@@ -229,6 +193,9 @@ export default function StakeComponent({
             });
         } finally {
             setIsWaiting(false);
+
+            // update balances
+            setTimeout(updateTokensAndPrices);
         }
     }
 
@@ -270,9 +237,9 @@ export default function StakeComponent({
             </div>
             <button
                 className={`btn ${
-                    !buttonConfig.disabled ? "btn-success capitalize" : ""
-                } bg-box mt-5 p-3 text-base font-extrabold rounded-sm h-16`}
-                disabled={buttonConfig.disabled || isWaiting}
+                    !buttonConfig.disabled ? "btn-success" : ""
+                } capitalize bg-box mt-5 p-3 text-base font-extrabold rounded-sm h-16`}
+                disabled={buttonConfig.disabled}
                 onClick={onStakeButtonClick}
             >
                 <span>{buttonConfig.text}</span>
